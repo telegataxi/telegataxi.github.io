@@ -54,24 +54,19 @@
             return {
                 startLatitude: parseFloat(params.get('startLatitude')), // Извлечение параметра startLatitude
                 startLongitude: parseFloat(params.get('startLongitude')), // Извлечение параметра startLongitude
-                endLatitude: parseFloat(params.get('endLatitude')), // Извлечение параметра endLatitude
-                endLongitude: parseFloat(params.get('endLongitude')) // Извлечение параметра endLongitude
             };
         }
 
         // Получаем параметры
         const queryParams = getQueryParams();
         const startCoords = [queryParams.startLatitude, queryParams.startLongitude];
-        const endCoords = [queryParams.endLatitude, queryParams.endLongitude];
-        console.log('Начальные координаты:', startCoords);
-        console.log('Конечные координаты:', endCoords);
 
         // Инициализация WebApp Telegram
         const tg = window.Telegram.WebApp;
         tg.expand(); // Разворачиваем WebApp на весь экран
 
         // Инициализация карты
-        const map = L.map('map').setView(startCoords, 15); // Устанавливаем начальное приближение и координаты
+        const map = L.map('map').setView(startCoords, 15); // Устанавливаем центр на начальные координаты
 
         // Добавляем OpenStreetMap слой
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -82,23 +77,28 @@
         // Создаем маркер для начальной точки
         const startMarker = L.marker(startCoords).addTo(map).bindPopup('Начальная точка').openPopup();
 
-        // Создаем маркер для конечной точки
-        const endMarker = L.marker(endCoords).addTo(map).bindPopup('Конечная точка').openPopup();
+        // Создаем маркер для центра карты (конечная точка)
+        const centerMarker = L.marker(map.getCenter()).addTo(map).bindPopup('Конечная точка').openPopup();
 
-        // Центрируем карту на конечной точке
-        map.setView(endCoords, 15);
-
-        // Создаем маршрут между начальной и конечной точками
-        L.Routing.control({
+        // Создаем маршрут между начальной точкой и конечной (центральной) точкой
+        const control = L.Routing.control({
             waypoints: [
                 L.latLng(startCoords[0], startCoords[1]),
-                L.latLng(endCoords[0], endCoords[1])
+                L.latLng(map.getCenter().lat, map.getCenter().lng) // Конечная точка будет в центре карты
             ],
             routeWhileDragging: true // Обновляем маршрут во время перетаскивания
         }).addTo(map);
 
+        // Обновляем конечную точку и маршрут при изменении центра карты
+        map.on('moveend', function() {
+            const newCenter = map.getCenter();
+            centerMarker.setLatLng(newCenter); // Обновляем позицию маркера
+            control.spliceWaypoints(control.getWaypoints().length - 1, 1, newCenter); // Обновляем конечную точку маршрута
+        });
+
         // Кнопка отправки конечной координаты
         document.getElementById('send-location-btn').addEventListener('click', function() {
+            const endCoords = centerMarker.getLatLng(); // Получаем текущие координаты конечной точки
             // Отправляем конечные координаты в Telegram через WebApp
             tg.sendData(JSON.stringify({
                 start: {
@@ -106,8 +106,8 @@
                     longitude: startCoords[1]
                 },
                 end: {
-                    latitude: endCoords[0],
-                    longitude: endCoords[1]
+                    latitude: endCoords.lat,
+                    longitude: endCoords.lng
                 }
             }));
 
