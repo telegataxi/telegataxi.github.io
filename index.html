@@ -15,7 +15,7 @@
             height: 100vh; /* Высота карты на весь экран */
             position: relative; /* Для позиционирования кнопки */
         }
-        #send-location-btn, #build-route-btn {
+        #send-location-btn {
             position: absolute; /* Абсолютное позиционирование на карте */
             bottom: 20px; /* Отступ снизу */
             left: 50%; /* Центрировать кнопку по горизонтали */
@@ -33,7 +33,7 @@
         }
         /* Стили для мобильных устройств */
         @media (max-width: 600px) {
-            #send-location-btn, #build-route-btn {
+            #send-location-btn {
                 width: 80%; /* Ширина кнопки на мобильных устройствах */
                 font-size: 16px; /* Размер шрифта на мобильных устройствах */
             }
@@ -43,7 +43,6 @@
 <body>
     <div id="map"></div>
     <button id="send-location-btn">Отправить конечные координаты</button>
-    <button id="build-route-btn">Построить маршрут</button> <!-- Кнопка для построения маршрута -->
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
@@ -79,34 +78,30 @@
         const startMarker = L.marker(startCoords).addTo(map).bindPopup('Начальная точка').openPopup();
 
         // Создаем маркер для центра карты (конечная точка)
-        const centerMarker = L.marker(map.getCenter()).addTo(map).bindPopup('Конечная точка').openPopup();
+        const centerMarker = L.marker(map.getCenter(), {
+            icon: L.icon({
+                iconUrl: 'https://example.com/path/to/your/center-marker-icon.png', // Замените на свой URL иконки
+                iconSize: [32, 32], // Размер иконки
+                iconAnchor: [16, 32], // Точка привязки иконки
+                popupAnchor: [0, -32] // Точка привязки всплывающего окна
+            })
+        }).addTo(map).bindPopup('Конечная точка').openPopup();
 
         // Объект для управления маршрутом
-        let control = null;
+        let control = L.Routing.control({
+            waypoints: [
+                L.latLng(startCoords[0], startCoords[1]),
+                centerMarker.getLatLng() // Конечная точка будет в центре карты
+            ],
+            routeWhileDragging: false, // Не обновляем маршрут во время перетаскивания
+            draggableWaypoints: false // Не позволяем перетаскивать точки маршрута
+        }).addTo(map);
 
-        // Обновляем конечную точку при изменении центра карты
+        // Обновляем конечную точку и маршрут при изменении центра карты
         map.on('moveend', function() {
             const newCenter = map.getCenter();
             centerMarker.setLatLng(newCenter); // Обновляем позицию маркера
-            if (control) {
-                control.spliceWaypoints(control.getWaypoints().length - 1, 1, newCenter); // Обновляем конечную точку маршрута
-            }
-        });
-
-        // Кнопка для построения маршрута
-        document.getElementById('build-route-btn').addEventListener('click', function() {
-            // Создаем маршрут между начальной точкой и конечной (центральной) точкой
-            if (control) {
-                control.remove(); // Удаляем предыдущий маршрут, если он существует
-            }
-            control = L.Routing.control({
-                waypoints: [
-                    L.latLng(startCoords[0], startCoords[1]),
-                    centerMarker.getLatLng() // Конечная точка будет в центре карты
-                ],
-                routeWhileDragging: false, // Не обновляем маршрут во время перетаскивания
-                draggableWaypoints: false // Не позволяем перетаскивать точки маршрута
-            }).addTo(map);
+            control.spliceWaypoints(control.getWaypoints().length - 1, 1, newCenter); // Обновляем конечную точку маршрута
         });
 
         // Кнопка отправки конечной координаты
@@ -126,6 +121,13 @@
 
             tg.close(); // Закрываем WebApp
         });
+
+        // Обновление маршрута при перезагрузке
+        control.on('routesfound', function(e) {
+            const route = e.routes[0];
+            map.fitBounds(route.getBounds()); // Устанавливаем границы карты в соответствии с маршрутом
+        });
+
     </script>
 </body>
 </html>
