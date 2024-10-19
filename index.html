@@ -70,8 +70,8 @@
         // Создаем маркер для начальной точки
         const startMarker = L.marker(startCoords).addTo(map).bindPopup('Начальная точка').openPopup();
 
-        // Создаем маркер для конечной точки без иконки
-        const centerMarker = L.marker(map.getCenter()).addTo(map).bindPopup('Конечная точка').openPopup();
+        // Создаем маркер для конечной точки
+        let centerMarker = L.marker(map.getCenter()).addTo(map).bindPopup('Конечная точка').openPopup();
 
         // Объект для управления маршрутом
         let control = L.Routing.control({
@@ -87,7 +87,7 @@
         let isMoving = false;
         let timeoutId;
 
-        // Обновляем конечную точку и маршрут при изменении центра карты с плавной анимацией
+        // Обновляем конечную точку и маршрут при изменении центра карты
         map.on('move', function() {
             const center = map.getCenter();
             centerMarker.setLatLng(center); // Обновляем позицию маркера
@@ -98,6 +98,7 @@
             timeoutId = setTimeout(() => {
                 isMoving = false;
                 control.spliceWaypoints(control.getWaypoints().length - 1, 1, center); // Обновляем конечную точку маршрута
+                control.setWaypoints(control.getWaypoints()); // Обновляем маршрут
             }, 2000); // 2 секунды
         });
 
