@@ -70,14 +70,8 @@
         // Создаем маркер для начальной точки
         const startMarker = L.marker(startCoords).addTo(map).bindPopup('Начальная точка').openPopup();
 
-        // Создаем маркер для конечной точки
-        const centerMarker = L.marker(map.getCenter(), {
-            icon: L.icon({
-                iconSize: [32, 32], // Размер иконки
-                iconAnchor: [16, 32], // Точка привязки иконки
-                popupAnchor: [0, -32] // Точка привязки всплывающего окна
-            })
-        }).addTo(map).bindPopup('Конечная точка').openPopup();
+        // Создаем маркер для конечной точки без иконки
+        const centerMarker = L.marker(map.getCenter()).addTo(map).bindPopup('Конечная точка').openPopup();
 
         // Объект для управления маршрутом
         let control = L.Routing.control({
@@ -89,11 +83,22 @@
             draggableWaypoints: false // Не позволяем перетаскивать точки маршрута
         }).addTo(map);
 
+        // Переменные для отслеживания времени покоя
+        let isMoving = false;
+        let timeoutId;
+
         // Обновляем конечную точку и маршрут при изменении центра карты с плавной анимацией
         map.on('move', function() {
             const center = map.getCenter();
             centerMarker.setLatLng(center); // Обновляем позицию маркера
-            control.spliceWaypoints(control.getWaypoints().length - 1, 1, center); // Обновляем конечную точку маршрута
+
+            // Сбрасываем таймер
+            isMoving = true;
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                isMoving = false;
+                control.spliceWaypoints(control.getWaypoints().length - 1, 1, center); // Обновляем конечную точку маршрута
+            }, 2000); // 2 секунды
         });
 
         // Получаем текущую тему пользователя
