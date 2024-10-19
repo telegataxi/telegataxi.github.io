@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram WebApp Geolocation</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        #map {
+            height: 100vh;
+            position: relative; /* Для позиционирования кнопки */
+        }
+        #send-location-btn {
+            position: absolute; /* Абсолютное позиционирование на карте */
+            bottom: 20px; /* Отступ снизу */
+            left: 50%; /* Центрировать кнопку по горизонтали */
+            transform: translateX(-50%); /* Смещение для центрирования */
+            z-index: 1000;
+            background-color: #0088cc; /* Цвет кнопки Telegram */
+            color: white;
+            padding: 15px 25px; /* Увеличение padding для кнопки */
+            border: none;
+            border-radius: 30px; /* Закругленные углы для кнопки */
+            font-size: 18px; /* Размер шрифта */
+            cursor: pointer; /* Указатель курсора */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Тень для кнопки */
+            transition: background-color 0.3s; /* Плавный переход цвета */
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <button id="send-location-btn">Отправить конечные координаты</button>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        // Функция для извлечения параметров из URL
+        function getQueryParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                startLatitude: parseFloat(params.get('startLatitude')), // Извлечение параметра startLatitude
+                startLongitude: parseFloat(params.get('startLongitude')) // Извлечение параметра startLongitude
+            };
+        }
+
+        // Получаем параметры
+        const queryParams = getQueryParams();
+        const startCoords = [queryParams.startLatitude, queryParams.startLongitude];
+        console.log('Начальные координаты:', startCoords);
+
+        // Инициализация WebApp Telegram
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Разворачиваем WebApp на весь экран
+
+        // Инициализация карты
+        const map = L.map('map').setView(startCoords, 15); // Устанавливаем начальное приближение и координаты
+
+        // Добавляем OpenStreetMap слой
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Создаем маркер для начальной точки
+        const startMarker = L.marker(startCoords).addTo(map).bindPopup('Начальная точка').openPopup();
+
+        // Переменные для конечной точки и маршрута
+        let endMarker;
+        let routingControl;
+
+        // Обработка клика по карте для установки конечной точки
+        map.on('click', function(e) {
+            const { lat, lng } = e.latlng; // Получаем координаты клика
+            
+            if (endMarker) {
+                endMarker.setLatLng([lat, lng]); // Перемещаем метку, если она уже существует
+            } else {
+                endMarker = L.marker([lat, lng]).addTo(map).bindPopup('Конечная точка').openPopup(); // Создаем новый маркер
+            }
+
+            // Устанавливаем конечную точку в центр карты
+            map.setView([lat, lng], 15);
+
+            // Если маршрут уже существует, обновляем его
+            if (routingControl) {
+                routingControl.setWaypoints([L.latLng(startCoords[0], startCoords[1]), L.latLng(lat, lng)]);
+            } else {
+                // Создаем новый маршрут
+                routingControl = L.Routing.control({
+                    waypoints: [
+                        L.latLng(startCoords[0], startCoords[1]),
+                        L.latLng(lat, lng)
+                    ],
+                    routeWhileDragging: true // Обновляем маршрут во время перетаскивания
+                }).addTo(map);
+            }
+        });
+
+        // Кнопка отправки конечной координаты
+        document.getElementById('send-location-btn').addEventListener('click', function() {
+            if (endMarker) {
+                const endCoords = endMarker.getLatLng();
+                const endLatitude = endCoords.lat;
+                const endLongitude = endCoords.lng;
+
+                // Отправляем конечные координаты в Telegram через WebApp
+                tg.sendData(JSON.stringify({
+                    start: {
+                        latitude: startCoords[0],
+                        longitude: startCoords[1]
+                    },
+                    end: {
+                        latitude: endLatitude,
+                        longitude: endLongitude
+                    }
+                }));
+
+                tg.close(); // Закрываем WebApp
+            } else {
+                alert('Пожалуйста, выберите конечную точку на карте.');
+            }
+        });
+    </script>
+</body>
+</html>
