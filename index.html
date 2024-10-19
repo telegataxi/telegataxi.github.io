@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Telegram WebApp Geolocation</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
     <style>
         body {
             margin: 0;
@@ -35,10 +34,9 @@
 </head>
 <body>
     <div id="map"></div>
-    <button id="send-location-btn">Отправить конечные координаты</button>
+    <button id="send-location-btn">Отправить геопозицию</button>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>
         // Функция для извлечения параметров из URL
@@ -67,41 +65,18 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // Создаем маркер для начальной точки
-        const startMarker = L.marker(startCoords).addTo(map).bindPopup('Начальная точка').openPopup();
-
-        // Создаем маркер для центра карты (конечная точка)
-        const centerMarker = L.marker(map.getCenter(), {
+        // Создаем красный маркер для начальной точки
+        const startMarker = L.marker(startCoords, {
             icon: L.icon({
-                iconUrl: 'https://твой-подарок.рф/image/catalog/2018/2019/1186fa08fc35f3c3a84eec7a5aa99f81.png', // Замените на свой URL иконки
-                iconSize: [32, 32], // Размер иконки
-                iconAnchor: [16, 32], // Точка привязки иконки
-                popupAnchor: [0, -32] // Точка привязки всплывающего окна
+                iconUrl: 'https://toppng.com/uploads/preview/red-map-marker-clipart-red-map-marker-icon-11562842270bm8hkiwh8s.png', // URL для красного маркера
+                iconSize: [32, 32], // Размер маркера
+                iconAnchor: [16, 32], // Точка, которая будет находиться в основании маркера
             })
-        }).addTo(map).bindPopup('Конечная точка').openPopup();
-
-        // Объект для управления маршрутом
-        let control = L.Routing.control({
-            waypoints: [
-                L.latLng(startCoords[0], startCoords[1]),
-                centerMarker.getLatLng() // Конечная точка будет в центре карты
-            ],
-            routeWhileDragging: false, // Не обновляем маршрут во время перетаскивания
-            draggableWaypoints: false // Не позволяем перетаскивать точки маршрута
-        }).addTo(map);
-
-        // Обновляем конечную точку и маршрут при изменении центра карты с плавной анимацией
-        map.on('move', function() {
-            const center = map.getCenter();
-            centerMarker.setLatLng(center); // Обновляем позицию маркера
-
-            // Плавное обновление конечной точки
-            control.spliceWaypoints(control.getWaypoints().length - 1, 1, center); // Обновляем конечную точку маршрута
-        });
+        }).addTo(map).bindPopup('Начальная точка').openPopup();
 
         // Обработчик изменения зума
         map.on('zoomend', function() {
-            // При изменении зума, центрируем карту на текущем центре
+            // Центрируем карту на текущем центре
             map.setView(map.getCenter(), map.getZoom());
         });
 
@@ -112,9 +87,9 @@
         const sendLocationButton = document.getElementById('send-location-btn');
         sendLocationButton.style.backgroundColor = isDarkTheme ? '#0077b3' : '#0088cc'; // Цвет для темной темы
 
-        // Кнопка отправки конечной координаты
+        // Кнопка отправки геопозиции
         sendLocationButton.addEventListener('click', function() {
-            const endCoords = centerMarker.getLatLng(); // Получаем текущие координаты конечной точки
+            const endCoords = map.getCenter(); // Получаем текущие координаты центра карты
             // Отправляем конечные координаты в Telegram через WebApp
             tg.sendData(JSON.stringify({
                 start: {
@@ -129,13 +104,6 @@
 
             tg.close(); // Закрываем WebApp
         });
-
-        // Обновление маршрута при перезагрузке
-        control.on('routesfound', function(e) {
-            const route = e.routes[0];
-            map.fitBounds(route.getBounds()); // Устанавливаем границы карты в соответствии с маршрутом
-        });
-
     </script>
 </body>
 </html>
