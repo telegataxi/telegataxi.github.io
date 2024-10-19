@@ -15,7 +15,7 @@
             height: 100vh; /* Высота карты на весь экран */
             position: relative; /* Для позиционирования кнопки */
         }
-        #send-location-btn {
+        #send-location-btn, #build-route-btn {
             position: absolute; /* Абсолютное позиционирование на карте */
             bottom: 20px; /* Отступ снизу */
             left: 50%; /* Центрировать кнопку по горизонтали */
@@ -33,7 +33,7 @@
         }
         /* Стили для мобильных устройств */
         @media (max-width: 600px) {
-            #send-location-btn {
+            #send-location-btn, #build-route-btn {
                 width: 80%; /* Ширина кнопки на мобильных устройствах */
                 font-size: 16px; /* Размер шрифта на мобильных устройствах */
             }
@@ -43,6 +43,7 @@
 <body>
     <div id="map"></div>
     <button id="send-location-btn">Отправить конечные координаты</button>
+    <button id="build-route-btn">Построить маршрут</button> <!-- Кнопка для построения маршрута -->
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
@@ -80,20 +81,32 @@
         // Создаем маркер для центра карты (конечная точка)
         const centerMarker = L.marker(map.getCenter()).addTo(map).bindPopup('Конечная точка').openPopup();
 
-        // Создаем маршрут между начальной точкой и конечной (центральной) точкой
-        const control = L.Routing.control({
-            waypoints: [
-                L.latLng(startCoords[0], startCoords[1]),
-                L.latLng(map.getCenter().lat, map.getCenter().lng) // Конечная точка будет в центре карты
-            ],
-            routeWhileDragging: true // Обновляем маршрут во время перетаскивания
-        }).addTo(map);
+        // Объект для управления маршрутом
+        let control = null;
 
-        // Обновляем конечную точку и маршрут при изменении центра карты
+        // Обновляем конечную точку при изменении центра карты
         map.on('moveend', function() {
             const newCenter = map.getCenter();
             centerMarker.setLatLng(newCenter); // Обновляем позицию маркера
-            control.spliceWaypoints(control.getWaypoints().length - 1, 1, newCenter); // Обновляем конечную точку маршрута
+            if (control) {
+                control.spliceWaypoints(control.getWaypoints().length - 1, 1, newCenter); // Обновляем конечную точку маршрута
+            }
+        });
+
+        // Кнопка для построения маршрута
+        document.getElementById('build-route-btn').addEventListener('click', function() {
+            // Создаем маршрут между начальной точкой и конечной (центральной) точкой
+            if (control) {
+                control.remove(); // Удаляем предыдущий маршрут, если он существует
+            }
+            control = L.Routing.control({
+                waypoints: [
+                    L.latLng(startCoords[0], startCoords[1]),
+                    centerMarker.getLatLng() // Конечная точка будет в центре карты
+                ],
+                routeWhileDragging: false, // Не обновляем маршрут во время перетаскивания
+                draggableWaypoints: false // Не позволяем перетаскивать точки маршрута
+            }).addTo(map);
         });
 
         // Кнопка отправки конечной координаты
