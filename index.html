@@ -99,6 +99,12 @@
             control.spliceWaypoints(control.getWaypoints().length - 1, 1, center); // Обновляем конечную точку маршрута
         });
 
+        // Обработчик изменения зума
+        map.on('zoomend', function() {
+            // При изменении зума, центрируем карту на текущем центре
+            map.setView(map.getCenter(), map.getZoom());
+        });
+
         // Получаем текущую тему пользователя
         const isDarkTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
