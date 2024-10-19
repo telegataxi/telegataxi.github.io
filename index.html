@@ -81,7 +81,7 @@
         }).addTo(map).bindPopup('Конечная точка').openPopup();
 
         // Объект для управления маршрутом
-        let control = L.Routing.control({
+        const control = L.Routing.control({
             waypoints: [
                 L.latLng(startCoords[0], startCoords[1]),
                 centerMarker.getLatLng() // Конечная точка будет в центре карты
@@ -90,7 +90,7 @@
             draggableWaypoints: false // Не позволяем перетаскивать точки маршрута
         }).addTo(map);
 
-        // Обновляем конечную точку и маршрут при изменении центра карты с плавной анимацией
+        // Обновляем конечную точку и маршрут при изменении центра карты
         map.on('move', function() {
             const center = map.getCenter();
             centerMarker.setLatLng(center); // Обновляем позицию маркера
@@ -101,7 +101,7 @@
 
         // Обработчик изменения зума
         map.on('zoomend', function() {
-            // При изменении зума, центрируем карту на текущем центре
+            // Центрируем карту на текущем центре
             map.setView(map.getCenter(), map.getZoom());
         });
 
@@ -135,7 +135,6 @@
             const route = e.routes[0];
             map.fitBounds(route.getBounds()); // Устанавливаем границы карты в соответствии с маршрутом
         });
-
     </script>
 </body>
 </html>
