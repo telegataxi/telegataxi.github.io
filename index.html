@@ -31,13 +31,6 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Тень для кнопки */
             transition: background-color 0.3s; /* Плавный переход цвета */
         }
-        /* Стили для мобильных устройств */
-        @media (max-width: 600px) {
-            #send-location-btn {
-                width: 80%; /* Ширина кнопки на мобильных устройствах */
-                font-size: 16px; /* Размер шрифта на мобильных устройствах */
-            }
-        }
     </style>
 </head>
 <body>
@@ -66,7 +59,7 @@
         tg.expand(); // Разворачиваем WebApp на весь экран
 
         // Инициализация карты
-        const map = L.map('map').setView(startCoords, 15); // Устанавливаем центр на начальные координаты
+        const map = L.map('map').setView(startCoords, 19); // Устанавливаем центр на начальные координаты
 
         // Добавляем OpenStreetMap слой
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -80,7 +73,7 @@
         // Создаем маркер для центра карты (конечная точка)
         const centerMarker = L.marker(map.getCenter(), {
             icon: L.icon({
-                iconUrl: 'https://example.com/path/to/your/center-marker-icon.png', // Замените на свой URL иконки
+                iconUrl: 'https://твой-подарок.рф/image/catalog/2018/2019/1186fa08fc35f3c3a84eec7a5aa99f81.png', // Замените на свой URL иконки
                 iconSize: [32, 32], // Размер иконки
                 iconAnchor: [16, 32], // Точка привязки иконки
                 popupAnchor: [0, -32] // Точка привязки всплывающего окна
@@ -97,15 +90,24 @@
             draggableWaypoints: false // Не позволяем перетаскивать точки маршрута
         }).addTo(map);
 
-        // Обновляем конечную точку и маршрут при изменении центра карты
-        map.on('moveend', function() {
-            const newCenter = map.getCenter();
-            centerMarker.setLatLng(newCenter); // Обновляем позицию маркера
-            control.spliceWaypoints(control.getWaypoints().length - 1, 1, newCenter); // Обновляем конечную точку маршрута
+        // Обновляем конечную точку и маршрут при изменении центра карты с плавной анимацией
+        map.on('move', function() {
+            const center = map.getCenter();
+            centerMarker.setLatLng(center); // Обновляем позицию маркера
+
+            // Плавное обновление конечной точки
+            control.spliceWaypoints(control.getWaypoints().length - 1, 1, center); // Обновляем конечную точку маршрута
         });
 
+        // Получаем текущую тему пользователя
+        const isDarkTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        // Установка цвета кнопки в зависимости от темы
+        const sendLocationButton = document.getElementById('send-location-btn');
+        sendLocationButton.style.backgroundColor = isDarkTheme ? '#0077b3' : '#0088cc'; // Цвет для темной темы
+
         // Кнопка отправки конечной координаты
-        document.getElementById('send-location-btn').addEventListener('click', function() {
+        sendLocationButton.addEventListener('click', function() {
             const endCoords = centerMarker.getLatLng(); // Получаем текущие координаты конечной точки
             // Отправляем конечные координаты в Telegram через WebApp
             tg.sendData(JSON.stringify({
